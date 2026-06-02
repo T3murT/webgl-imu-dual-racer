@@ -5,11 +5,6 @@ var canvas;
 
 var progMain, progSky, progStar, progSun;
 
-// IMU Arabası (mavi)
-// yunuslama >  5° → ileri  (W)
-// yunuslama < -5° → geri   (S)
-// sapma     >  8° → sağ    (D)
-// sapma     < -8° → sol    (A)
 var TRACK_RADIUS = 60.0;
 var imuCar = {
   x: 0, z: TRACK_RADIUS - 4.5,   // İç şerit
@@ -550,7 +545,6 @@ function update(dt) {
 
   updateSunMeterUI();
 
-  // ─── HUD ────────────────────────────────────────────────────
   document.getElementById('pos-imu').textContent = (imuCar.speed * 3.6).toFixed(0) + ' km/h';
   document.getElementById('pos-wasd').textContent = (wasdCar.speed * 3.6).toFixed(0) + ' km/h';
 
@@ -599,10 +593,7 @@ function render(now) {
   var aspect = halfW / fullH;
 
   gl.enable(gl.SCISSOR_TEST);
-
-  // ────────────────────────────────────────────────────────────
-  // SOL VIEWPORT — IMU Arabası (🔵)
-  // ────────────────────────────────────────────────────────────
+  
   gl.viewport(0, 0, halfW, fullH);
   gl.scissor(0, 0, halfW, fullH);
   gl.clearColor(0.04, 0.04, 0.06, 1);
@@ -613,10 +604,7 @@ function render(now) {
   var imuView = lookAt(imuEye, [imuCar.x, 1.0, imuCar.z], [0, 1, 0]);
   var imuProj = perspective(55, aspect, 0.5, 600);
   drawScene(imuView, imuProj, sunPos);
-
-  // ────────────────────────────────────────────────────────────
-  // SAĞ VIEWPORT — WASD Arabası (🔴)
-  // ────────────────────────────────────────────────────────────
+  
   gl.viewport(halfW, 0, halfW, fullH);
   gl.scissor(halfW, 0, halfW, fullH);
   gl.clearColor(0.04, 0.04, 0.06, 1);
