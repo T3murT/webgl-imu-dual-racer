@@ -1,0 +1,10 @@
+{
+  "name": "grafik_araba_root",
+  "version": "1.0.0",
+  "description": "Root package for routing to arayuz",
+  "scripts": {
+    "start": "cd arayuz && npm start",
+    "dev": "cd arayuz && npm run dev",
+    "install-all": "cd arayuz && npm install"
+  }
+}
