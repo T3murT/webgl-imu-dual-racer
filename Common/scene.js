@@ -5,21 +5,16 @@ var canvas;
 
 var progMain, progSky, progStar, progSun;
 
-// IMU Arabası (mavi)
-// yunuslama >  5° → ileri  (W)
-// yunuslama < -5° → geri   (S)
-// sapma     >  8° → sağ    (D)
-// sapma     < -8° → sol    (A)
 var TRACK_RADIUS = 60.0;
+
 var imuCar = {
-  x: 0, z: TRACK_RADIUS - 4.5,   // İç şerit
+  x: 0, z: TRACK_RADIUS - 4.5,
   yaw: -90,
   speed: 0,
   roll: 0,
   imu: { sapma: 0, yunuslama: 0, yuvarlanma: 0 }
 };
 
-// WASD Arabası (kırmızı)
 var wasdCar = {
   x: 0, z: TRACK_RADIUS + 4.5,   // Dış şerit
   yaw: -90,
@@ -145,7 +140,7 @@ function buildGroundGeometry() {
 }
 
 function buildTrackGeometry() {
-  var SEGS = 120;         // Pist segmenti sayısı (pürüzsüzlük)
+  var SEGS = 120;         // Pist segmenti sayısı
   var ROAD_W = 18;          // Asfalt genişliği
   var CURB_W = 3;           // Kaldırım genişliği
   var Ri = TRACK_RADIUS - ROAD_W / 2;   // İç yarıçap
@@ -282,7 +277,6 @@ function buildCarGeometry(bufs, isIMU) {
   bufs.push(buildBox(2.2, 0.55, 1.6, [0, 1.05, 0], c, true));
   bufs.push(buildBox(0.12, 0.4, 1.8, [-1.7, 0.7, 0], [0.15, 0.15, 0.15, 1], false));
 
-  // Tekerlek pozisyonları: [x, y, z] — y=0.42 (yarıçap kadar yerden kalk)
   var wp = [[1.2, 0.42, 0.95], [1.2, 0.42, -0.95], [-1.2, 0.42, 0.95], [-1.2, 0.42, -0.95]];
   for (var i = 0; i < 4; i++) {
     bufs.push(buildCylinder(0.42, 0.35, 16, wp[i], [0.1, 0.1, 0.12, 1]));
@@ -544,13 +538,13 @@ function update(dt) {
   var iTargetRoll = imuCar.imu.yuvarlanma * 0.06;
   imuCar.roll += (iTargetRoll - imuCar.roll) * Math.min(1, dt * 5);
 
+  // ─── Güneş Açısı → Gece Karışımı ──────────────────────────
   var horizonDist = Math.min(sunAngle, 180 - sunAngle);
   nightBlend = Math.max(0, Math.min(1, 1.0 - horizonDist / 40.0));
   nightBlend = Math.pow(nightBlend, 1.5);
 
   updateSunMeterUI();
 
-  // ─── HUD ────────────────────────────────────────────────────
   document.getElementById('pos-imu').textContent = (imuCar.speed * 3.6).toFixed(0) + ' km/h';
   document.getElementById('pos-wasd').textContent = (wasdCar.speed * 3.6).toFixed(0) + ' km/h';
 
@@ -600,9 +594,6 @@ function render(now) {
 
   gl.enable(gl.SCISSOR_TEST);
 
-  // ────────────────────────────────────────────────────────────
-  // SOL VIEWPORT — IMU Arabası (🔵)
-  // ────────────────────────────────────────────────────────────
   gl.viewport(0, 0, halfW, fullH);
   gl.scissor(0, 0, halfW, fullH);
   gl.clearColor(0.04, 0.04, 0.06, 1);
@@ -614,9 +605,6 @@ function render(now) {
   var imuProj = perspective(55, aspect, 0.5, 600);
   drawScene(imuView, imuProj, sunPos);
 
-  // ────────────────────────────────────────────────────────────
-  // SAĞ VIEWPORT — WASD Arabası (🔴)
-  // ────────────────────────────────────────────────────────────
   gl.viewport(halfW, 0, halfW, fullH);
   gl.scissor(halfW, 0, halfW, fullH);
   gl.clearColor(0.04, 0.04, 0.06, 1);
@@ -723,6 +711,7 @@ function drawStartLine(viewM, projM, sunPos, nBlend) {
 
 function drawCar(bufs, viewM, projM, sunPos, nBlend, cx, cy, cz, yaw, roll, tex) {
   gl.useProgram(progMain);
+
   var carModel = mult(
     mult(translate(cx, cy, cz), rotate(yaw, [0, 1, 0])),
     mult(rotate(roll, [1, 0, 0]), rotate(-90, [0, 1, 0]))

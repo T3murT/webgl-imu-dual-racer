@@ -1,24 +1,6 @@
-/**
- * app.js — GLSL Shader Kaynakları
- *
- * Angel's Interactive Computer Graphics, 7. Baskı prensipleri:
- *  - Vertex shader: Model/View/Projection dönüşümleri (Bölüm 4–5)
- *  - Fragment shader: Phong aydınlatma modeli (Bölüm 6)
- *  - Texture mapping (Bölüm 7)
- *
- * Shader programları:
- *  1. VERT_MAIN / FRAG_MAIN  → Araba ve pist (Phong + texture)
- *  2. VERT_SKY  / FRAG_SKY   → Skybox gradyan (gündüz/gece)
- *  3. VERT_STAR / FRAG_STAR  → Gece yıldızları (gl_PointSize)
- *  4. VERT_SUN  / FRAG_SUN   → Güneş/Ay diski (billboard)
- */
 
 "use strict";
 
-// ════════════════════════════════════════════════════════════════
-// 1. ANA NESNE SHADER — Phong Aydınlatma + Texture
-//    Angel 7th Ed., Ch.4 (Transformations), Ch.6 (Lighting)
-// ════════════════════════════════════════════════════════════════
 
 var VERT_MAIN = [
   "attribute vec4 aPosition;",
@@ -85,11 +67,6 @@ var FRAG_MAIN = [
   "}"
 ].join("\n");
 
-// ════════════════════════════════════════════════════════════════
-// 2. SKYBOX SHADER — Gündüz/Gece gradyanı
-//    Basit fullscreen quad, uNightBlend ile renk geçişi
-// ════════════════════════════════════════════════════════════════
-
 var VERT_SKY = [
   "attribute vec4 aPosition;",
   "attribute vec2 aTexCoord;",
@@ -138,11 +115,6 @@ var FRAG_SKY = [
   "}"
 ].join("\n");
 
-// ════════════════════════════════════════════════════════════════
-// 3. YILDIZ SHADER — Gece noktasal yıldızlar (gl_PointSize)
-//    Angel 7th Ed., Ch.3 (Point sprites)
-// ════════════════════════════════════════════════════════════════
-
 var VERT_STAR = [
   "attribute vec4  aPosition;",
   "attribute float aBrightness;",
@@ -175,18 +147,6 @@ var FRAG_STAR = [
   "  gl_FragColor = vec4(starCol, alpha);",
   "}"
 ].join("\n");
-
-// ════════════════════════════════════════════════════════════════
-// 4. GÜNEŞ/AY SHADER — Billboard disk
-//    Güneş: parlak sarı, ışık halesi
-//    Ay: grimsi-beyaz, krater dokusu prosedürel
-// ════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════
-// 4. GÜNEŞ/AY SHADER — 3D Küre (Billboard değil!)
-//    Güneş: parlak sarı-turuncu, limb karartma + granülasyon
-//    Ay:    gri, prosedürel krater, yönlü aydınlatma
-// ════════════════════════════════════════════════════════════════
 
 var VERT_SUN = [
   "attribute vec4 aPosition;",
@@ -266,11 +226,6 @@ var FRAG_SUN = [
   "  }",
   "}"
 ].join("\n");
-
-// ════════════════════════════════════════════════════════════════
-// 5. PROCEDURAL TEXTURE HELPERS
-//    Araba ve pist için canvas-based texture üretimi
-// ════════════════════════════════════════════════════════════════
 
 /**
  * Yarış arabası texture'ı oluşturur (canvas 2D).
@@ -378,19 +333,14 @@ function makeGroundTexture() {
     var gx = Math.random() * 256;
     var gy = Math.random() * 256;
     var gb = 0.05 + Math.random() * 0.12;
-    ctx.fillStyle = 'rgba(' + Math.floor(30 + Math.random()*40) + ',' +
-                              Math.floor(80 + Math.random()*40) + ',20,' + gb + ')';
+    ctx.fillStyle = 'rgba(' + Math.floor(30 + Math.random() * 40) + ',' +
+      Math.floor(80 + Math.random() * 40) + ',20,' + gb + ')';
     ctx.fillRect(gx, gy, 2, Math.random() * 4 + 1);
   }
 
   return cv;
 }
 
-/**
- * Başlangıç çizgisi (damalı bayrak) texture'ı — siyah/beyaz kareler.
- * U yönü: pistin genişliği boyunca (iç→dış kenar)
- * V yönü: çizginin derinliği (ince)
- */
 function makeStartLineTexture() {
   var cv = document.createElement('canvas');
   cv.width = 256; cv.height = 64;
