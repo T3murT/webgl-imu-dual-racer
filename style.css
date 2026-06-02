@@ -64,14 +64,14 @@
 }
 
 :root {
-  --primary:      #e0e0e0;      /* Açık gri - ana metin */
-  --accent:       #ff5555;      /* Kırmızı - hata/bağlı değil */
+  --primary:      #e0e0e0;
+  --accent:       #ff5555;
   --blue-car:     #4da6ff;
   --red-car:      #ff5555;
   --panel-bg:     rgba(6, 6, 8, 0.90);
   --panel-border: rgba(255, 255, 255, 0.10);
-  --text-primary: #cccccc;
-  --text-dim:     #555555;
+  --text-primary: #e8e8e8;
+  --text-dim:     #999999;
   --green:        #6fcf6f;
   --glass:        rgba(255, 255, 255, 0.03);
 
