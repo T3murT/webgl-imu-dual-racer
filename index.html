@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL RACE SIMULATOR</title>
+  <meta name="description"
+    content="WebGL tabanlı 3D araba yarışı simülasyonu. IMU sensör verisi ve WASD tuşları ile iki arabalı yarış, güneş/ay döngüsü.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Inter:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- WebGL Canvas -->
+    <canvas id="gl-canvas"></canvas>
+
+    <!-- Split-Screen Kamera Etiketleri -->
+    <div id="cam-label-left">PLAYER 1</div>
+    <div id="cam-label-right">PLAYER 2</div>
+    <div id="cam-divider"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+
+      <!-- Başlık -->
+      <div id="hud-title">
+        <div class="hud-title-text">
+          <span class="title-main">START RACE</span>
+          <span class="title-sub">WebGL RACE SIMULATOR</span>
+        </div>
+      </div>
+
+      <!-- IMU Veri Paneli -->
+      <div id="imu-panel" class="panel">
+        <div class="panel-header">
+          <div class="status-dot" id="imu-status-dot"></div>
+          <span>IMU DATAS</span>
+          <span class="panel-badge" id="imu-status-text">NO CONNECTION</span>
+        </div>
+        <div class="imu-grid">
+          <div class="imu-item">
+            <label>YAW</label>
+            <div class="imu-value" id="val-sapma">0.0°</div>
+            <div class="imu-bar-wrap">
+              <div class="imu-bar yaw-bar" id="bar-sapma"></div>
+            </div>
+          </div>
+          <div class="imu-item">
+            <label>PITCH</label>
+            <div class="imu-value" id="val-yunuslama">0.0°</div>
+            <div class="imu-bar-wrap">
+              <div class="imu-bar pitch-bar" id="bar-yunuslama"></div>
+            </div>
+          </div>
+          <div class="imu-item">
+            <label>ROLL</label>
+            <div class="imu-value" id="val-yuvarlanma">0.0°</div>
+            <div class="imu-bar-wrap">
+              <div class="imu-bar roll-bar" id="bar-yuvarlanma"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kontrol Paneli -->
+      <div id="controls-panel" class="panel">
+        <div class="panel-header"><span>LIGHT CONTROL</span></div>
+        <div class="controls-section">
+          <div class="ctrl-desc">PLANET CONTROL<br>0 = DAY · 180 = NIGHT</div>
+          <div class="sun-meter">
+            <div class="sun-meter-bar" id="sun-meter-bar"></div>
+            <div class="sun-meter-label">
+              <span></span>
+              <span id="sun-angle-label">90</span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Konum / Bilgi Paneli -->
+      <div id="info-panel" class="panel">
+        <div class="panel-header"><span>VEHICLE STATUS</span></div>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-icon"></span>
+            <span>PLAYER 1 SPEED</span>
+            <span id="pos-imu" class="info-val">0 km/h</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"></span>
+            <span>PLAYER 2 SPEED</span>
+            <span id="pos-wasd" class="info-val">0 km/h</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"></span>
+            <span>TIME</span>
+            <span id="race-time" class="info-val">00:00.000</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"></span>
+            <span>FPS</span>
+            <span id="fps-display" class="info-val">60</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /hud -->
+
+    <!-- Gündüz/Gece göstergesi (sağ üst) -->
+    <div id="daynight-indicator">
+      <span id="daynight-icon"></span>
+      <span id="daynight-text">DAY</span>
+    </div>
+
+    <!-- Başlangıç ekranı -->
+    <div id="start-overlay">
+      <div id="start-content">
+        <div id="start-title">READY TO RACE</div>
+        <div id="start-subtitle">RACE SIMULATOR</div>
+        <div id="start-info">
+          <div class="start-row"><span>PLAYER 1</span><span></span></div>
+          <div class="start-row"><span>PLAYER 2</span><span></span></div>
+          <div class="start-row"><span>DAY CONTROLLER</span><span></span></div>
+        </div>
+        <button id="start-btn">START RACE</button>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+
+  <!-- JavaScript (sırayla yüklenir) -->
+  <script src="Common/MV.js"></script>
+  <script src="Common/initShaders.js"></script>
+  <script src="app.js"></script>
+  <script src="Common/scene.js"></script>
+
+</body>
+
+</html>
