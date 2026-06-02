@@ -210,6 +210,7 @@ async function initSerialPort() {
 
     var firstPacketReceived = false;
     var errorCount = 0;
+    var packetCounter = 0;
 
     parser.on('data', function(data) {
       var str = data.trim();
@@ -221,6 +222,10 @@ async function initSerialPort() {
           if (!firstPacketReceived) {
             console.log('[Serial] ✅ İlk geçerli IMU verisi alındı ve tarayıcıya aktarılıyor:', str);
             firstPacketReceived = true;
+          }
+          packetCounter++;
+          if (packetCounter % 50 === 0) {
+             console.log('[Serial] Paket akışı devam ediyor. Son veri:', str);
           }
           broadcastIMU(d);
         }
