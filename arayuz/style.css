@@ -492,32 +492,21 @@ html, body {
 
 #start-content {
   text-align: center;
-  padding: 48px;
-  background: linear-gradient(135deg, rgba(10,12,20,0.95), rgba(20,15,8,0.95));
-  border: 1px solid rgba(232,178,58,0.4);
-  border-radius: 20px;
-  box-shadow:
-    0 0 60px rgba(232,178,58,0.15),
-    0 0 120px rgba(232,178,58,0.05),
-    inset 0 1px 0 rgba(232,178,58,0.2);
-  max-width: 480px;
+  padding: 40px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  max-width: 400px;
   width: 90%;
 }
 
 #start-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 28px;
-  font-weight: 900;
-  color: var(--primary);
-  text-shadow: 0 0 30px rgba(232,178,58,0.5);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 8px;
-  letter-spacing: 3px;
-  animation: glow-pulse 2s ease-in-out infinite alternate;
-}
-
-@keyframes glow-pulse {
-  from { text-shadow: 0 0 20px rgba(232,178,58,0.4); }
-  to   { text-shadow: 0 0 40px rgba(232,178,58,0.8), 0 0 80px rgba(232,178,58,0.3); }
+  letter-spacing: 2px;
 }
 
 #start-subtitle {
@@ -539,12 +528,15 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(232,178,58,0.15);
-  border-radius: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
   font-weight: 600;
+  color: var(--text-dim);
+}
+.start-row:last-child {
+  border-bottom: none;
 }
 
 .start-row span:last-child {
@@ -553,23 +545,22 @@ html, body {
 }
 
 #start-btn {
-  padding: 14px 40px;
-  background: linear-gradient(135deg, var(--primary) 0%, #c8922a 100%);
-  border: none;
-  border-radius: 10px;
-  color: #111;
-  font-family: 'Orbitron', sans-serif;
+  padding: 12px 32px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
   font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 2px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
   cursor: pointer;
-  transition: all 0.25s;
-  box-shadow: 0 4px 20px rgba(232,178,58,0.3);
+  transition: all 0.2s;
 }
 
 #start-btn:hover {
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 30px rgba(232,178,58,0.5);
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
 }
 
 #start-btn:active {
