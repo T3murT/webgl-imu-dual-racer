@@ -6,6 +6,10 @@ var canvas;
 var progMain, progSky, progStar, progSun;
 
 var TRACK_RADIUS = 60.0;
+var TRACK_INNER = TRACK_RADIUS - 9.0;   // İç duvar yarıçapı
+var TRACK_OUTER = TRACK_RADIUS + 9.0;   // Dış duvar yarıçapı
+var CAR_RADIUS = 2.0;                   // Çakışma alanı yarıçapı
+
 var imuCar = {
   x: 0, z: TRACK_RADIUS - 4.5,   // İç şerit
   yaw: -90,
@@ -22,6 +26,17 @@ var wasdCar = {
   roll: 0
 };
 
+// Trafik Araçları (NPC)
+var trafficCars = [
+  { x: TRACK_RADIUS, z: 0,             yaw: 0,   speed: 8.0,  roll: 0, angle: 0.0   },
+  { x: -TRACK_RADIUS, z: 0,            yaw: 180, speed: 6.5,  roll: 0, angle: Math.PI },
+  { x: 0, z: -TRACK_RADIUS,            yaw: 90,  speed: 7.5,  roll: 0, angle: Math.PI * 0.5 },
+  { x: 0, z: TRACK_RADIUS,             yaw: 270, speed: 9.0,  roll: 0, angle: Math.PI * 1.5 },
+  { x: TRACK_RADIUS * 0.7, z: TRACK_RADIUS * 0.7,  yaw: 45,  speed: 5.5, roll: 0, angle: Math.PI * 0.25 }
+];
+
+var trafficBufs = [];
+
 // Güneş/Ay
 var sunAngle = 90;
 var nightBlend = 0.0;
@@ -36,6 +51,7 @@ var camera = { eye: [0, 6, -20], at: [0, 1, 0], up: [0, 1, 0] };
 // Geometri tamponları
 var skyBuf = {}, groundBuf = {}, roadBuf = {}, starBuf = {}, sunBuf = {}, startLineBuf = {};
 var imuCarBufs = [], wasdCarBufs = [];
+var trafficCarBufs = [];
 
 // Texture'lar
 var texRoad, texGround, texCarIMU, texCarWASD, texStartLine;
@@ -80,6 +96,7 @@ window.addEventListener('load', function () {
   buildSunGeometry();
   buildCarGeometry(imuCarBufs, true);
   buildCarGeometry(wasdCarBufs, false);
+  buildCarGeometry(trafficCarBufs, false, true);
 
   texRoad = createTextureFromCanvas(makeRoadTexture());
   texGround = createTextureFromCanvas(makeGroundTexture());
@@ -269,9 +286,18 @@ function buildStartLineGeometry() {
   startLineBuf.stride = 8 * 4;
 }
 
-function buildCarGeometry(bufs, isIMU) {
-  var b = isIMU ? [0.1, 0.4, 1.0, 1.0] : [0.8, 0.1, 0.1, 1.0];
-  var c = isIMU ? [0.05, 0.25, 0.7, 1.0] : [0.5, 0.05, 0.05, 1.0];
+function buildCarGeometry(bufs, isIMU, isTraffic) {
+  var b, c;
+  if (isTraffic) {
+    b = [0.9, 0.75, 0.0, 1.0];  // Sarı (NPC)
+    c = [0.7, 0.55, 0.0, 1.0];
+  } else if (isIMU) {
+    b = [0.1, 0.4, 1.0, 1.0];
+    c = [0.05, 0.25, 0.7, 1.0];
+  } else {
+    b = [0.8, 0.1, 0.1, 1.0];
+    c = [0.5, 0.05, 0.05, 1.0];
+  }
 
   bufs.push(buildBox(3.6, 0.6, 1.8, [0, 0.5, 0], b, true));
   bufs.push(buildBox(2.2, 0.55, 1.6, [0, 1.05, 0], c, true));
@@ -467,9 +493,86 @@ function connectWS() {
   }
 }
 
+// ────────────────────────────────────────────────────────────────
+//  Yardımcı: Aracı pist sınırları içinde tut (çember pistte)
+// ────────────────────────────────────────────────────────────────
+function enforceTrackBounds(car) {
+  var dist = Math.sqrt(car.x * car.x + car.z * car.z);
+  if (dist < 0.001) return; // Merkez sıfırlamayı önle
+
+  var nx = car.x / dist;
+  var nz = car.z / dist;
+
+  if (dist < TRACK_INNER + CAR_RADIUS) {
+    // İç duvara çarptı → dışarı it ve hızı sönümle
+    car.x = nx * (TRACK_INNER + CAR_RADIUS);
+    car.z = nz * (TRACK_INNER + CAR_RADIUS);
+    // Radyal bileşeni sıfırla (çarpışma)
+    var vx = Math.sin(radians(car.yaw)) * car.speed;
+    var vz = Math.cos(radians(car.yaw)) * car.speed;
+    var vDotN = vx * (-nx) + vz * (-nz);
+    if (vDotN < 0) { // İçe doğru gidiyorsa
+      vx -= 2 * vDotN * (-nx);
+      vz -= 2 * vDotN * (-nz);
+      car.speed = Math.sqrt(vx * vx + vz * vz) * 0.6;
+    }
+  } else if (dist > TRACK_OUTER - CAR_RADIUS) {
+    // Dış duvara çarptı → içeri it
+    car.x = nx * (TRACK_OUTER - CAR_RADIUS);
+    car.z = nz * (TRACK_OUTER - CAR_RADIUS);
+    var vx2 = Math.sin(radians(car.yaw)) * car.speed;
+    var vz2 = Math.cos(radians(car.yaw)) * car.speed;
+    var vDotN2 = vx2 * nx + vz2 * nz;
+    if (vDotN2 > 0) { // Dışa doğru gidiyorsa
+      vx2 -= 2 * vDotN2 * nx;
+      vz2 -= 2 * vDotN2 * nz;
+      car.speed = Math.sqrt(vx2 * vx2 + vz2 * vz2) * 0.6;
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+//  Yardımcı: İki araç arasında çakışma çözümü
+// ────────────────────────────────────────────────────────────────
+function resolveCarCollision(carA, carB) {
+  var dx = carA.x - carB.x;
+  var dz = carA.z - carB.z;
+  var dist = Math.sqrt(dx * dx + dz * dz);
+  var minDist = CAR_RADIUS * 2.0;
+
+  if (dist < minDist && dist > 0.001) {
+    var nx = dx / dist;
+    var nz = dz / dist;
+    var overlap = minDist - dist;
+
+    // İkisini eşit oranda ayır
+    carA.x += nx * overlap * 0.5;
+    carA.z += nz * overlap * 0.5;
+    carB.x -= nx * overlap * 0.5;
+    carB.z -= nz * overlap * 0.5;
+
+    // Hızları yansıt (esnek çarpışma, e=0.5)
+    var vaX = Math.sin(radians(carA.yaw)) * carA.speed;
+    var vaZ = Math.cos(radians(carA.yaw)) * carA.speed;
+    var vbX = Math.sin(radians(carB.yaw)) * carB.speed;
+    var vbZ = Math.cos(radians(carB.yaw)) * carB.speed;
+
+    var relVdotN = (vaX - vbX) * nx + (vaZ - vbZ) * nz;
+    if (relVdotN < 0) {
+      var impulse = relVdotN * 0.75; // 0.75 = (1+e)/2 * m/2
+      vaX -= impulse * nx;  vaZ -= impulse * nz;
+      vbX += impulse * nx;  vbZ += impulse * nz;
+
+      carA.speed = Math.sign(carA.speed) * Math.sqrt(vaX * vaX + vaZ * vaZ);
+      carB.speed = Math.sign(carB.speed) * Math.sqrt(vbX * vbX + vbZ * vbZ);
+    }
+  }
+}
+
 function update(dt) {
   if (!raceRunning) return;
 
+  // ── WASD ARABA
   var wAccel = 0;
   if (keys['KeyW']) wAccel = ACCEL;
   if (keys['KeyS']) {
@@ -487,8 +590,8 @@ function update(dt) {
 
   var wSpeedFac = Math.abs(wasdCar.speed) / MAX_FWD;
   var wTurnDir = 0;
-  if (keys['KeyA']) wTurnDir = 1;   // Sol
-  if (keys['KeyD']) wTurnDir = -1;   // Sağ
+  if (keys['KeyA']) wTurnDir = 1;
+  if (keys['KeyD']) wTurnDir = -1;
   if (wasdCar.speed < 0) wTurnDir = -wTurnDir;
 
   wasdCar.yaw += wTurnDir * TURN_SPD * wSpeedFac * dt;
@@ -500,13 +603,14 @@ function update(dt) {
   var wTargetRoll = -wTurnDir * wSpeedFac * 5.0;
   wasdCar.roll += (wTargetRoll - wasdCar.roll) * Math.min(1, dt * 6);
 
+  // ── IMU ARABA
   var FWD_THR = 5;
   var TURN_THR = 8;
 
-  var imuW = imuCar.imu.yuvarlanma < -FWD_THR; // roll ileri
-  var imuS = imuCar.imu.yuvarlanma > FWD_THR; // roll geri
-  var imuD = imuCar.imu.yunuslama < -TURN_THR; // pitch sağ (terslendi)
-  var imuA = imuCar.imu.yunuslama > TURN_THR; // pitch sol (terslendi)
+  var imuW = imuCar.imu.yuvarlanma < -FWD_THR;
+  var imuS = imuCar.imu.yuvarlanma > FWD_THR;
+  var imuD = imuCar.imu.yunuslama < -TURN_THR;
+  var imuA = imuCar.imu.yunuslama > TURN_THR;
 
   var iAccel = 0;
   if (imuW) iAccel = ACCEL;
@@ -523,11 +627,10 @@ function update(dt) {
     imuCar.speed = Math.max(-MAX_REV, Math.min(MAX_FWD, imuCar.speed));
   }
 
-  // A = sol (yaw artar, CCW), D = sağ (yaw azalır, CW)
   var iSpeedFac = Math.abs(imuCar.speed) / MAX_FWD;
   var iTurnDir = 0;
-  if (imuA) iTurnDir = 1;   // Sol
-  if (imuD) iTurnDir = -1;   // Sağ
+  if (imuA) iTurnDir = 1;
+  if (imuD) iTurnDir = -1;
   if (imuCar.speed < 0) iTurnDir = -iTurnDir;
 
   imuCar.yaw += iTurnDir * TURN_SPD * iSpeedFac * dt;
@@ -538,6 +641,40 @@ function update(dt) {
 
   var iTargetRoll = imuCar.imu.yuvarlanma * 0.06;
   imuCar.roll += (iTargetRoll - imuCar.roll) * Math.min(1, dt * 5);
+
+  // ── TRAFİK ARAÇLARI (NPC) — Pistin tanjantı boyunca ilerle
+  for (var t = 0; t < trafficCars.length; t++) {
+    var tc = trafficCars[t];
+    // Açı ilerlet (pist çevresinde sabit hızda dön)
+    var angSpeed = tc.speed / TRACK_RADIUS;  // rad/s
+    tc.angle += angSpeed * dt;
+
+    // Pistte sabit yarıçapta tut
+    var tcR = (t % 2 === 0) ? (TRACK_RADIUS - 4.5) : (TRACK_RADIUS + 4.5);
+    tc.x = Math.cos(tc.angle) * tcR;
+    tc.z = Math.sin(tc.angle) * tcR;
+
+    // Yönü tanjanta hizala
+    tc.yaw = -(tc.angle * 180 / Math.PI);
+    tc.roll = 0;
+  }
+
+  // ── PİST SINIRI
+  enforceTrackBounds(wasdCar);
+  enforceTrackBounds(imuCar);
+
+  // ── ÇAKIŞMA TESPİTİ: Oyuncu-Oyuncu
+  resolveCarCollision(imuCar, wasdCar);
+
+  // ── ÇAKIŞMA TESPİTİ: Oyuncular-Trafik
+  for (var ti = 0; ti < trafficCars.length; ti++) {
+    resolveCarCollision(imuCar, trafficCars[ti]);
+    resolveCarCollision(wasdCar, trafficCars[ti]);
+  }
+
+  // ── SINIR TEKRAR KONTROL
+  enforceTrackBounds(wasdCar);
+  enforceTrackBounds(imuCar);
 
   var horizonDist = Math.min(sunAngle, 180 - sunAngle);
   nightBlend = Math.max(0, Math.min(1, 1.0 - horizonDist / 40.0));
@@ -563,6 +700,12 @@ function drawScene(viewM, projM, sunPos) {
   drawGround(viewM, projM, sunPos, nightBlend);
   drawTrack(viewM, projM, sunPos, nightBlend);
   drawStartLine(viewM, projM, sunPos, nightBlend);
+  // Trafik araçları (sarı)
+  for (var ti = 0; ti < trafficCars.length; ti++) {
+    var tc = trafficCars[ti];
+    drawCar(trafficCarBufs, viewM, projM, sunPos, nightBlend,
+      tc.x, 0, tc.z, tc.yaw, tc.roll, null);
+  }
   drawCar(imuCarBufs, viewM, projM, sunPos, nightBlend,
     imuCar.x, 0, imuCar.z, imuCar.yaw, imuCar.roll, texCarIMU);
   drawCar(wasdCarBufs, viewM, projM, sunPos, nightBlend,
